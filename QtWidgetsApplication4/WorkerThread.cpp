@@ -139,7 +139,7 @@ WorkerThread::~WorkerThread()
 
 void WorkerThread::run()
 {
-  //  encodeImage();
+    encodeImage();
     read_thread();
 }
 
@@ -290,7 +290,7 @@ YuvData change2yuv(uint8_t* rgb_data, int width, int height)
 void WorkerThread::encodeImage()
 {
     FILE* fp = NULL;
-    fp = fopen("csQt.bmp", "rb");
+    fp = fopen("D:/kylinv10/ffmpeg_vs2019/ffmpeg_vs2019/msvc/bin/x64/image-001.bmp", "rb");
     fseek(fp, 0, SEEK_END);
     int size = ftell(fp);
     fseek(fp, 0, SEEK_SET);
@@ -328,12 +328,31 @@ void WorkerThread::encodeImage()
     m_pEncoderH264Ctx->gop_size = 1;      // 关键帧间隔
     m_pEncoderH264Ctx->max_b_frames = 0;
     m_pEncoderH264Ctx->pix_fmt = AV_PIX_FMT_YUV420P;
+    AVDictionary* encoder_opts=NULL;
+    av_dict_set(&encoder_opts, "threads", "auto", 0);
     int ret = avcodec_open2(m_pEncoderH264Ctx, pEncoderH264, NULL);
     //编码器不用等待缓冲区填满，接收到数据即开始编码
     av_opt_set(m_pEncoderH264Ctx->priv_data, "tune", "zerolatency", 0);
     YuvData yuvData = change2yuv(data2, 960, 540);
     AVFrame* frame = av_frame_alloc();
     memset(frame, 0, sizeof(AVFrame));
+
+    FILE* ptr = fopen("yuvData0.dat", "wb");
+    int wsize = fwrite(yuvData.yuvData[0], 1, yuvData.yumLinesize[0], ptr);
+    fflush(ptr);
+    fclose(ptr);
+
+    ptr = fopen("yuvData1.dat", "wb");
+    wsize = fwrite(yuvData.yuvData[1], 1, yuvData.yumLinesize[1], ptr);
+    fflush(ptr);
+    fclose(ptr);
+
+    ptr = fopen("yuvData2.dat", "wb");
+    wsize = fwrite(yuvData.yuvData[2], 1, yuvData.yumLinesize[2], ptr);
+    fflush(ptr);
+    fclose(ptr);
+
+
     frame->data[0] = yuvData.yuvData[0];
     frame->data[1] = yuvData.yuvData[1];
     frame->data[2] = yuvData.yuvData[2];
@@ -342,30 +361,33 @@ void WorkerThread::encodeImage()
     frame->linesize[2] = yuvData.yumLinesize[2];
     frame->height = 540;
     frame->width = 960;
-    frame->color_range = AVCOL_RANGE_MPEG;
-    frame->color_primaries = AVCOL_PRI_UNSPECIFIED;
-    frame->color_trc = AVCOL_TRC_UNSPECIFIED;
-    frame->colorspace = AVCOL_SPC_UNSPECIFIED;
+    m_pEncoderH264Ctx->color_range=frame->color_range = AVCOL_RANGE_MPEG;
+    m_pEncoderH264Ctx->color_primaries = frame->color_primaries = AVCOL_PRI_UNSPECIFIED;
+    m_pEncoderH264Ctx->color_trc =frame->color_trc = AVCOL_TRC_UNSPECIFIED;
+    m_pEncoderH264Ctx->colorspace = frame->colorspace = AVCOL_SPC_UNSPECIFIED;
     frame->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
     frame->format = m_pEncoderH264Ctx->pix_fmt;
     AVPacket* pkt = av_packet_alloc();
     int got_pictuure = 0;
-    bmp_encode_frameTest( frame);
+    //bmp_encode_frameTest( frame);
 
     
     ret = avcodec_send_frame(m_pEncoderH264Ctx, frame);
    
-    AVPacket* h264_pkt = av_packet_alloc();//存读取和编码后的H264数据
-    while (1) {
-        ret = avcodec_receive_packet(m_pEncoderH264Ctx, h264_pkt);
-        avcodec_send_frame(m_pEncoderH264Ctx, NULL);
-        if (ret > 0) {
-            uint8_t packetData[1024] = { 0 };
-            // memcpy(packetData,(void*)h264_pkt->data[0],h264_pkt->size);
-            packetData[5] = 0;
+   
+
+    while ((ret = avcodec_receive_packet(m_pEncoderH264Ctx, pkt)) == AVERROR(EAGAIN)) {
+        ret = avcodec_send_frame(m_pEncoderH264Ctx, NULL);
+        if (ret < 0) {
+            
         }
-        
     }
+    ptr = fopen("codePacket.dat", "wb");
+    wsize = fwrite(pkt->data, 1, pkt->size, ptr);
+    fflush(ptr);
+    fclose(ptr);
+    
+    
    
 }
 
