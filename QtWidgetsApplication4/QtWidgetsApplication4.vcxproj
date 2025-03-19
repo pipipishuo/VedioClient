@@ -66,7 +66,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>D:\kylinv10\ffmpeg_vs2019\ffmpeg_vs2019\msvc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_UNICODE;UNICODE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_UNICODE;UNICODE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Psapi.lib;libavdeviced.lib;libavfilterd.lib;libavformatd.lib;libavcodecd.lib;libpostprocd.lib;libswresampled.lib;libswscaled.lib;libavutild.lib;libsdl2d.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -103,7 +103,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Common.cpp" />
+    <ClCompile Include="PublishThread.cpp" />
     <ClCompile Include="QtWidgetsClass.cpp" />
+    <ClCompile Include="rtmpTool.cpp" />
     <ClCompile Include="WorkerThread.cpp" />
     <QtRcc Include="QtWidgetsApplication4.qrc" />
     <QtUic Include="QtWidgetsApplication4.ui" />
@@ -119,7 +121,12 @@
     <QtMoc Include="WorkerThread.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bytestream.h" />
     <ClInclude Include="Common.h" />
+    <ClInclude Include="flv.h" />
+    <ClInclude Include="rtmp.h" />
+    <ClInclude Include="rtmpTool.h" />
+    <QtMoc Include="PublishThread.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

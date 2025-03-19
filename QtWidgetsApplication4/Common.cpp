@@ -175,4 +175,3 @@ void playSound(char* pcmdata) {
 		pRenderClient->ReleaseBuffer(480, 0);
 	}
 }
-

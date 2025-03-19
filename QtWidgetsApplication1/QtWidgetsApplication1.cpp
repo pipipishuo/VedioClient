@@ -115,7 +115,7 @@ int QtWidgetsApplication1::Cstestencode(AVCodecContext* enc_ctx, AVFrame* frame)
 void QtWidgetsApplication1::cstest() {
     for (int i = 0; i < 1; i++) {
 
-        
+        cstestEncodeCtx();
 
         filtered_frame = av_frame_alloc();
         int ret = av_buffersink_get_frame_flags(cstestOutFilter, filtered_frame,
@@ -137,6 +137,19 @@ void QtWidgetsApplication1::cstest() {
             fflush(ptr);
             fclose(ptr);
         }
+        
+        {
+            uint8_t* mdatBuf = (uint8_t*)malloc(pkt->size * 2);
+            memset(mdatBuf, 0, pkt->size * 2);
+            uint8_t* temp = mdatBuf;
+            int size = ff_avc_parse_nal_units(&mdatBuf, pkt->data, pkt->size);
+            FILE* ptr = fopen("mdatCodePacket.dat", "wb");
+            char vedioPacket[5] = { 0x17,01,00,00,00 };
+            ret = fwrite(&vedioPacket, 1, 5, ptr);
+            int wsize = fwrite(temp, 1, size, ptr);
+            fflush(ptr);
+            fclose(ptr);
+        }
         av_log(NULL, AV_LOG_INFO,
             "bench: utime=%0.3fs stime=%0.3fs rtime=%0.3fs\n",
             1000000.0, 1000000.0, 1000000.0);
@@ -146,7 +159,7 @@ void QtWidgetsApplication1::cstest() {
 void QtWidgetsApplication1::CSgetFrame()
 {
     cstestConfigFilter();
-    cstestEncodeCtx();
+    
     QStringList files;
     files.append("D:/kylinv10/ffmpeg_vs2019/ffmpeg_vs2019/msvc/bin/x64/image-001.bmp");
     files.append("D:/kylinv10/ffmpeg_vs2019/ffmpeg_vs2019/msvc/bin/x64/image-002.bmp");
@@ -173,11 +186,11 @@ void QtWidgetsApplication1::CSgetFrame()
     avcodec_open2(dec_ctx, dec, &decoder_opts);
     avcodec_parameters_to_context(dec_ctx, par);
    
-    /*for(int i=0;i<2;i++)
-    {*/
+    for(int i=0;i<2;i++)
+    {
         CSTestFrame = av_frame_alloc();
-       // FILE* file = fopen(files.at(i).toStdString().c_str(), "rb");
-        FILE* file = fopen("D:/kylinv10/ffmpeg_vs2019/ffmpeg_vs2019/msvc/bin/x64/image-001.bmp", "rb");
+        FILE* file = fopen(files.at(i).toStdString().c_str(), "rb");
+      //  FILE* file = fopen("D:/kylinv10/ffmpeg_vs2019/ffmpeg_vs2019/msvc/bin/x64/image-001.bmp", "rb");
         uint8_t* data = (uint8_t*)malloc(1555254);
         int rsize = fread(data, 1, 1555254, file);
         fclose(file);
@@ -195,7 +208,7 @@ void QtWidgetsApplication1::CSgetFrame()
 
         av_buffersrc_add_frame_flags(cstestInputFilter, CSTestFrame, AV_BUFFERSRC_FLAG_PUSH);
         cstest();
-    //}
+      }
     
     
     
@@ -203,4 +216,84 @@ void QtWidgetsApplication1::CSgetFrame()
    
     
     return;
+}
+const uint8_t* QtWidgetsApplication1::avc_find_startcode_internal(const uint8_t* p, const uint8_t* end)
+{
+    const uint8_t* a = p + 4 - ((intptr_t)p & 3);
+
+    for (end -= 3; p < a && p < end; p++) {
+        if (p[0] == 0 && p[1] == 0 && p[2] == 1)
+            return p;
+    }
+
+    for (end -= 3; p < end; p += 4) {
+        uint32_t x = *(const uint32_t*)p;
+        //      if ((x - 0x01000100) & (~x) & 0x80008000) // little endian
+        //      if ((x - 0x00010001) & (~x) & 0x00800080) // big endian
+        if ((x - 0x01010101) & (~x) & 0x80808080) { // generic
+            if (p[1] == 0) {
+                if (p[0] == 0 && p[2] == 1)
+                    return p;
+                if (p[2] == 0 && p[3] == 1)
+                    return p + 1;
+            }
+            if (p[3] == 0) {
+                if (p[2] == 0 && p[4] == 1)
+                    return p + 2;
+                if (p[4] == 0 && p[5] == 1)
+                    return p + 3;
+            }
+        }
+    }
+
+    for (end += 3; p < end; p++) {
+        if (p[0] == 0 && p[1] == 0 && p[2] == 1)
+            return p;
+    }
+
+    return end + 3;
+}
+const uint8_t* QtWidgetsApplication1::ff_avc_find_startcode(const uint8_t* p, const uint8_t* end) {
+    const uint8_t* out = avc_find_startcode_internal(p, end);
+    if (p < out && out < end && !out[-1]) out--;
+    return out;
+}
+void QtWidgetsApplication1::avio_w8(uint8_t** s, int b) {
+    uint8_t* temp = *s;
+    *temp = b;
+    (*s)++;
+}
+void QtWidgetsApplication1::avio_wb32(uint8_t** s, unsigned int val)
+{
+    avio_w8(s, val >> 24);
+    avio_w8(s, (uint8_t)(val >> 16));
+    avio_w8(s, (uint8_t)(val >> 8));
+    avio_w8(s, (uint8_t)val);
+}
+void QtWidgetsApplication1::avio_write(uint8_t** s, const unsigned char* buf, int size)
+{
+    uint8_t* temp = *s;
+    memcpy(temp, buf, size);
+    (*s) = (*s) + size;
+}
+int QtWidgetsApplication1::ff_avc_parse_nal_units(uint8_t** pb, const uint8_t* buf_in, int size)
+{
+    const uint8_t* p = buf_in;
+    const uint8_t* end = p + size;
+    const uint8_t* nal_start, * nal_end;
+
+    size = 0;
+    nal_start = ff_avc_find_startcode(p, end);
+    for (;;) {
+        while (nal_start < end && !*(nal_start++));
+        if (nal_start == end)
+            break;
+
+        nal_end = ff_avc_find_startcode(nal_start, end);
+        avio_wb32(pb, nal_end - nal_start);
+        avio_write(pb, nal_start, nal_end - nal_start);
+        size += 4 + nal_end - nal_start;
+        nal_start = nal_end;
+    }
+    return size;
 }

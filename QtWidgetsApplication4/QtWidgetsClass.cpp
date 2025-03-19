@@ -1,10 +1,15 @@
 #include "QtWidgetsClass.h"
 #include"WorkerThread.h"
+#include"PublishThread.h"
 #include<QPainter>
 QtWidgetsClass::QtWidgetsClass(QWidget *parent)
 	: QMainWindow(parent)
 {
 	ui.setupUi(this);
+	PublishThread* pThread = new PublishThread;
+	
+	pThread->start();
+	return;
 	WorkerThread* thread = new WorkerThread;
 	connect(thread, &WorkerThread::sigImg, this, &QtWidgetsClass::slot_img);
 	thread->start();
