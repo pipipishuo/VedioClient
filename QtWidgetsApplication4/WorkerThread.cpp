@@ -512,8 +512,11 @@ void WorkerThread::read_thread()
                 int got_pictuure;
                 AVPacket* pkt = av_packet_alloc();
                 bmp_encode_frame(videoAvctx, pkt, frame, &got_pictuure);
-
+                av_packet_free(&pkt);
+                
             }
+            
+            av_frame_free(&frame);
         }
         if (pkt->stream_index == 2) {
             avcodec_send_packet(audioAvctx, pkt);

@@ -55,6 +55,12 @@
     <ClCompile Include="rtmpTool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Encoder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="QtWidgetsClass.h">
@@ -66,9 +72,15 @@
     <QtMoc Include="PublishThread.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="Camera.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="QtWidgetsClass.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="Camera.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>
@@ -86,6 +98,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="rtmp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Encoder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

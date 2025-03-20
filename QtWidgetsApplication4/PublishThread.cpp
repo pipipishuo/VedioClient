@@ -2,6 +2,7 @@
 #include"winsock2.h"
 #include"Common.h"
 #include"rtmpTool.h"
+#include"Encoder.h"
 extern "C"
 {
 #include"libavcodec/avcodec.h"
@@ -16,13 +17,24 @@ extern "C"
 #include<libavutil/log.h>
 #include<libavutil/lfg.h>
 }
+#include"Camera.h"
 #define BUFFER_SIZE 1024
+struct VideoData {
+    char* data;
+    int size;
+    VideoData() {
+        data = NULL;
+        size = 0;
+    }
+};
 int rtmp_handshake(int server_fd);
 int gen_connect(int server_fd);
 void sendWindowSize(int new_socket, int size);
 int gen_create_stream(int new_socket);
 int chunkSize = 0;
 int gen_publish(int new_socket);
+void sendVideoData(int new_socket, VideoData vd);
+
 void PublishThread::run() {
     chunkSize = 0;
     WORD wVersionRequested;
@@ -56,7 +68,7 @@ void PublishThread::run() {
     // 绑定IP和端口
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(7777);
+    address.sin_port = htons(77777);
     err = bind(server_fd, (struct sockaddr*)&address, sizeof(address));
     if (err < 0) {
         perror("Bind failed");
@@ -115,6 +127,19 @@ void PublishThread::run() {
         hdr);
     //发送publish
     gen_publish(server_fd);
+    char* encodeData = (char*)malloc(102400);
+    
+    while (1) {
+        //msleep(50);
+        
+        int size = Encoder::GetIns()->CSgetFrame(encodeData);
+        VideoData vd;
+        vd.data = encodeData;
+        vd.size = size;
+        sendVideoData(server_fd, vd);
+    }
+    
+    return;
 }
 
 #define RTMP_HANDSHAKE_PACKET_SIZE 1536
@@ -345,7 +370,7 @@ int gen_publish(int new_socket)
    // av_log(s, AV_LOG_DEBUG, "Sending publish command for '%s'\n", rt->playpath);
 
     if ((ret = ff_rtmp_packet_create(&pkt, RTMP_SOURCE_CHANNEL, RTMP_PT_INVOKE,
-        0, 30 + strlen("test"))) < 0)
+        0, 30 + strlen("mystream"))) < 0)
         return ret;
 
     pkt.extra =3;
@@ -354,10 +379,24 @@ int gen_publish(int new_socket)
     ff_amf_write_string(&p, "publish");
     ff_amf_write_number(&p, 1);
     ff_amf_write_null(&p);
-    ff_amf_write_string(&p, "test");
+    ff_amf_write_string(&p, "mystream");
     ff_amf_write_string(&p, "live");
     RTMPPacket* prev_pkt_ptr = NULL;
     int nb_prev_pkt = 0;
     ff_rtmp_packet_write(new_socket, &pkt, chunkSize, &prev_pkt_ptr, &nb_prev_pkt);
     return 1;
+}
+void sendVideoData(int new_socket, VideoData vd) {
+    RTMPPacket p;
+    p.channel_id = 6;
+    p.ts_field = 0;
+    p.size = vd.size;
+    p.type = RTMP_PT_VIDEO;
+    p.extra = 0;
+
+
+    p.data = (uint8_t*)vd.data;
+    RTMPPacket* prev_pkt_ptr = NULL;
+    int nb_prev_pkt = 0;
+    ff_rtmp_packet_write(new_socket, &p, chunkSize, &prev_pkt_ptr, &nb_prev_pkt);
 }

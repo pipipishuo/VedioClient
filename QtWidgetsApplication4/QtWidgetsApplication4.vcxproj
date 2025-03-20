@@ -37,7 +37,7 @@
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
     <QtInstall>6.4.0_msvc2019_64</QtInstall>
-    <QtModules>core;gui;widgets</QtModules>
+    <QtModules>core;gui;widgets;multimedia</QtModules>
     <QtBuildConfig>debug</QtBuildConfig>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" Label="QtSettings">
@@ -102,12 +102,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Common.cpp" />
+    <ClCompile Include="Encoder.cpp" />
     <ClCompile Include="PublishThread.cpp" />
     <ClCompile Include="QtWidgetsClass.cpp" />
     <ClCompile Include="rtmpTool.cpp" />
     <ClCompile Include="WorkerThread.cpp" />
     <QtRcc Include="QtWidgetsApplication4.qrc" />
+    <QtUic Include="Camera.ui" />
     <QtUic Include="QtWidgetsApplication4.ui" />
     <QtMoc Include="QtWidgetsApplication4.h" />
     <ClCompile Include="QtWidgetsApplication4.cpp" />
@@ -122,7 +125,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bytestream.h" />
+    <QtMoc Include="Camera.h" />
     <ClInclude Include="Common.h" />
+    <ClInclude Include="Encoder.h" />
     <ClInclude Include="flv.h" />
     <ClInclude Include="rtmp.h" />
     <ClInclude Include="rtmpTool.h" />

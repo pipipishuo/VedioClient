@@ -323,18 +323,18 @@ int ff_rtmp_packet_write(int h, RTMPPacket* pkt,
     int written = 0;
     int ret;
     RTMPPacket* prev_pkt;
-    int use_delta; // flag if using timestamp delta, not RTMP_PS_TWELVEBYTES
+    int use_delta=0; // flag if using timestamp delta, not RTMP_PS_TWELVEBYTES
     uint32_t timestamp; // full 32-bit timestamp or delta value
 
-    if ((ret = ff_rtmp_check_alloc_array(prev_pkt_ptr, nb_prev_pkt,
+    /*if ((ret = ff_rtmp_check_alloc_array(prev_pkt_ptr, nb_prev_pkt,
         pkt->channel_id)) < 0)
-        return ret;
+        return ret;*/
     prev_pkt = *prev_pkt_ptr;
 
     //if channel_id = 0, this is first presentation of prev_pkt, send full hdr.
-    use_delta = prev_pkt[pkt->channel_id].channel_id &&
+   /* use_delta = prev_pkt[pkt->channel_id].channel_id &&
         pkt->extra == prev_pkt[pkt->channel_id].extra &&
-        pkt->timestamp >= prev_pkt[pkt->channel_id].timestamp;
+        pkt->timestamp >= prev_pkt[pkt->channel_id].timestamp;*/
 
     timestamp = pkt->timestamp;
     if (use_delta) {
@@ -347,7 +347,7 @@ int ff_rtmp_packet_write(int h, RTMPPacket* pkt,
         pkt->ts_field = timestamp;
     }
 
-    if (use_delta) {
+   /* if (use_delta) {
         if (pkt->type == prev_pkt[pkt->channel_id].type &&
             pkt->size == prev_pkt[pkt->channel_id].size) {
             mode = RTMP_PS_FOURBYTES;
@@ -357,7 +357,7 @@ int ff_rtmp_packet_write(int h, RTMPPacket* pkt,
         else {
             mode = RTMP_PS_EIGHTBYTES;
         }
-    }
+    }*/
 
     if (pkt->channel_id < 64) {
         bytestream_put_byte(&p, pkt->channel_id | (mode << 6));
@@ -382,12 +382,12 @@ int ff_rtmp_packet_write(int h, RTMPPacket* pkt,
     if (pkt->ts_field == 0xFFFFFF)
         bytestream_put_be32(&p, timestamp);
     // save history
-    prev_pkt[pkt->channel_id].channel_id = pkt->channel_id;
+    /*prev_pkt[pkt->channel_id].channel_id = pkt->channel_id;
     prev_pkt[pkt->channel_id].type = pkt->type;
     prev_pkt[pkt->channel_id].size = pkt->size;
     prev_pkt[pkt->channel_id].timestamp = pkt->timestamp;
     prev_pkt[pkt->channel_id].ts_field = pkt->ts_field;
-    prev_pkt[pkt->channel_id].extra = pkt->extra;
+    prev_pkt[pkt->channel_id].extra = pkt->extra;*/
 
     // FIXME:
     // Writing packets is currently not optimized to minimize system calls.
@@ -395,8 +395,11 @@ int ff_rtmp_packet_write(int h, RTMPPacket* pkt,
     // We should fix this behavior and by writing packets in a single or in as few as possible system calls.
     // Protocols like TCP and RTMP should benefit from this when enabling TCP_NODELAY.
     int headerCount=(int)(p - pkt_hdr);
-    if ((ret = send(h, (char*)pkt_hdr, headerCount,0)) < 0)
+    if ((ret = send(h, (char*)pkt_hdr, headerCount, 0)) < 0) {
+       int err= WSAGetLastError();
         return ret;
+    }
+        
     written = p - pkt_hdr + pkt->size;
     while (off < pkt->size) {
         int towrite = FFMIN(chunk_size, pkt->size - off);

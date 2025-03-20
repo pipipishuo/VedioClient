@@ -2,19 +2,28 @@
 #include"WorkerThread.h"
 #include"PublishThread.h"
 #include<QPainter>
+#include"Camera.h"
+#include"qtimer.h"
 QtWidgetsClass::QtWidgetsClass(QWidget *parent)
 	: QMainWindow(parent)
 {
 	ui.setupUi(this);
+	
+	Camera::GetIns()->capture(false);
+	QTimer* timer = new QTimer;
+	timer->setInterval(20);
+	connect(timer, &QTimer::timeout, this, &QtWidgetsClass::slot_timeout);
+	timer->start();
+	
 	PublishThread* pThread = new PublishThread;
 	
 	pThread->start();
-	return;
+	
 	WorkerThread* thread = new WorkerThread;
 	connect(thread, &WorkerThread::sigImg, this, &QtWidgetsClass::slot_img);
 	thread->start();
 	imgData =(uint32_t*) thread->srcdata;
-
+	
 	
 }
 
@@ -29,6 +38,10 @@ void QtWidgetsClass::paintEvent(QPaintEvent * event)
 		update();
 	
 	
+}
+void QtWidgetsClass::slot_timeout()
+{
+	Camera::GetIns()->capture(false);
 }
 void QtWidgetsClass::slot_img(uint32_t* img) {
 	//imgData = img;

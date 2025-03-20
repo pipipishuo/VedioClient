@@ -15,6 +15,7 @@ protected:
 	void paintEvent(QPaintEvent* event);
 public slots:
 	void slot_img(uint32_t* img);
+	void slot_timeout();
 private:
 	Ui::QtWidgetsClassClass ui;
 };
